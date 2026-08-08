@@ -1,0 +1,27 @@
+{
+  "name": "pi-peon",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "peon — thin pi → peon-ping CLI bridge. Pipes pi lifecycle events as JSON to the peon CLI on stdin for audio notifications, spam detection, debounce, and relay",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/javapacr/pi-peon.git"
+  },
+  "author": "javapacr",
+  "license": "MIT",
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0",
+    "typecheck": "tsc --noEmit"
+  },
+  "pi": {
+    "extensions": ["./peon.ts"]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3"
+  }
+}
