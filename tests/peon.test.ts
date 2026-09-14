@@ -316,6 +316,14 @@ describe("custom channel gating", () => {
 		assert.equal(stub.sent.length, 0);
 	});
 
+	it("maps a rising rpiv:ask-user:blocked edge to an elicitation_dialog notification", () => {
+		const stub = mountExtension("sess-a");
+		fireCustom(stub, "rpiv:ask-user:blocked", { active: true });
+		assert.equal(stub.sent.length, 1);
+		assert.equal(stub.sent[0].hook_event_name, "Notification");
+		assert.equal(stub.sent[0].notification_type, "elicitation_dialog");
+	});
+
 	it("stays a pure consumer: zero pi.events.emit calls across all handlers", () => {
 		const stub = mountExtension("sess-a");
 		fireNative(stub, "session_start");
