@@ -94,7 +94,10 @@ function fireCustom(stub: StubHandle, channel: string, data: unknown): void {
 }
 
 /** Poll until the capture file holds a non-empty line, or fail past the deadline. */
-async function pollForCapture(file: string, deadlineMs: number): Promise<string> {
+async function pollForCapture(
+	file: string,
+	deadlineMs: number,
+): Promise<string> {
 	const deadline = Date.now() + deadlineMs;
 	while (Date.now() < deadline) {
 		if (existsSync(file)) {
@@ -113,16 +116,13 @@ function capturePath(): string {
 describe("registration", () => {
 	it("registers exactly the native lifecycle handlers", () => {
 		const stub = mountExtension("s0");
-		assert.deepEqual(
-			[...stub.native.keys()].sort(),
-			[
-				"agent_settled",
-				"agent_start",
-				"session_shutdown",
-				"session_start",
-				"tool_execution_end",
-			],
-		);
+		assert.deepEqual([...stub.native.keys()].sort(), [
+			"agent_settled",
+			"agent_start",
+			"session_shutdown",
+			"session_start",
+			"tool_execution_end",
+		]);
 	});
 
 	it("registers exactly the custom channels", () => {
@@ -143,7 +143,10 @@ describe("registration", () => {
 describe("native event mappings", () => {
 	it("maps session_start to SessionStart", () => {
 		const stub = mountExtension("sess-a");
-		fireNative(stub, "session_start", { type: "session_start", reason: "startup" });
+		fireNative(stub, "session_start", {
+			type: "session_start",
+			reason: "startup",
+		});
 		assert.equal(stub.sent.length, 1);
 		assert.equal(stub.sent[0].hook_event_name, "SessionStart");
 	});
@@ -246,7 +249,10 @@ describe("session identity", () => {
 describe("session_shutdown gating", () => {
 	it("maps a quit shutdown to SessionEnd", () => {
 		const stub = mountExtension("sess-a");
-		fireNative(stub, "session_shutdown", { type: "session_shutdown", reason: "quit" });
+		fireNative(stub, "session_shutdown", {
+			type: "session_shutdown",
+			reason: "quit",
+		});
 		assert.equal(stub.sent.length, 1);
 		assert.equal(stub.sent[0].hook_event_name, "SessionEnd");
 	});
@@ -278,7 +284,11 @@ describe("custom channel gating", () => {
 		assert.equal(stub.sent.length, 1);
 		assert.equal(stub.sent[0].hook_event_name, "Notification");
 		assert.equal(stub.sent[0].notification_type, "permission_request");
-		assert.equal("message" in stub.sent[0], false, "message must not be forwarded");
+		assert.equal(
+			"message" in stub.sent[0],
+			false,
+			"message must not be forwarded",
+		);
 	});
 
 	it("ignores request-attention events without a payload", () => {
@@ -330,7 +340,10 @@ describe("custom channel gating", () => {
 		fireNative(stub, "agent_start");
 		fireNative(stub, "agent_settled");
 		fireNative(stub, "tool_execution_end", { toolName: "bash", isError: true });
-		fireNative(stub, "session_shutdown", { type: "session_shutdown", reason: "quit" });
+		fireNative(stub, "session_shutdown", {
+			type: "session_shutdown",
+			reason: "quit",
+		});
 		fireCustom(stub, "rpiv:ask-user:blocked", { active: true });
 		fireCustom(stub, "rpiv:ask-user:blocked", { active: false });
 		fireCustom(stub, "request-attention", { message: "approve?" });
@@ -342,7 +355,7 @@ describe("custom channel gating", () => {
 });
 
 describe("payload base shape", () => {
-	it("carries hook_event_name, session_id, cwd, and source:\"pi\" on every payload", () => {
+	it('carries hook_event_name, session_id, cwd, and source:"pi" on every payload', () => {
 		const stub = mountExtension("sess-shape");
 		fireNative(stub, "session_start");
 		fireNative(stub, "agent_start");

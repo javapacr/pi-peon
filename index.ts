@@ -122,49 +122,49 @@ export default function (pi: ExtensionAPI, deps?: { send?: Send }): void {
 		sendHook("Stop", sessionId, ctx.cwd);
 	});
 
-		pi.on("tool_execution_end", (event, ctx) => {
-			const sessionId = refreshSessionId(ctx);
-			if (!event.isError || !ctx.hasUI) return;
-			// peon checks tool_name === "Bash": normalize pi's bash and task
-			// (background task runner) names to the Claude Code convention.
-			const toolName = ["bash", "task"].includes(event.toolName.toLowerCase())
-				? "Bash"
-				: event.toolName;
-			sendHook("PostToolUseFailure", sessionId, ctx.cwd, {
-				tool_name: toolName,
-				error: "Tool error",
-			});
+	pi.on("tool_execution_end", (event, ctx) => {
+		const sessionId = refreshSessionId(ctx);
+		if (!event.isError || !ctx.hasUI) return;
+		// peon checks tool_name === "Bash": normalize pi's bash and task
+		// (background task runner) names to the Claude Code convention.
+		const toolName = ["bash", "task"].includes(event.toolName.toLowerCase())
+			? "Bash"
+			: event.toolName;
+		sendHook("PostToolUseFailure", sessionId, ctx.cwd, {
+			tool_name: toolName,
+			error: "Tool error",
 		});
+	});
 
-		pi.on("session_shutdown", (event, ctx) => {
-			const sessionId = refreshSessionId(ctx);
-			if (!ctx.hasUI) return;
-			if (event.reason !== "quit") return;
-			sendHook("SessionEnd", sessionId, ctx.cwd);
-		});
+	pi.on("session_shutdown", (event, ctx) => {
+		const sessionId = refreshSessionId(ctx);
+		if (!ctx.hasUI) return;
+		if (event.reason !== "quit") return;
+		sendHook("SessionEnd", sessionId, ctx.cwd);
+	});
 
-		pi.events.on("rpiv:ask-user:blocked", (data) => {
-			if (!isRecord(data) || !data.active) return;
-			sendHook("Notification", cachedSessionId(), process.cwd(), {
-				notification_type: "elicitation_dialog",
-			});
+	pi.events.on("rpiv:ask-user:blocked", (data) => {
+		if (!isRecord(data) || !data.active) return;
+		sendHook("Notification", cachedSessionId(), process.cwd(), {
+			notification_type: "elicitation_dialog",
 		});
+	});
 
-		pi.events.on("request-attention", (data) => {
-			if (!isRecord(data)) return;
-			// The emitter's message stays unforwarded — the peon CLI's handling
-			// of extra fields is unaudited, so payloads stay minimal.
-			sendHook("Notification", cachedSessionId(), process.cwd(), {
-				notification_type: "permission_request",
-			});
+	pi.events.on("request-attention", (data) => {
+		if (!isRecord(data)) return;
+		// The emitter's message stays unforwarded — the peon CLI's handling
+		// of extra fields is unaudited, so payloads stay minimal.
+		sendHook("Notification", cachedSessionId(), process.cwd(), {
+			notification_type: "permission_request",
 		});
+	});
 
-		pi.events.on("herdr:blocked", (data) => {
-			// Edge-paired channel: only the rising edge (active:true) is
-			// attention; the falling edge carries no label and emits nothing.
-			if (!isRecord(data) || !data.active) return;
-			const extra: PeonPayload = { notification_type: "subagent_attention" };
-			if (typeof data.label === "string") extra.label = data.label;
-			sendHook("Notification", cachedSessionId(), process.cwd(), extra);
-		});
+	pi.events.on("herdr:blocked", (data) => {
+		// Edge-paired channel: only the rising edge (active:true) is
+		// attention; the falling edge carries no label and emits nothing.
+		if (!isRecord(data) || !data.active) return;
+		const extra: PeonPayload = { notification_type: "subagent_attention" };
+		if (typeof data.label === "string") extra.label = data.label;
+		sendHook("Notification", cachedSessionId(), process.cwd(), extra);
+	});
 }
