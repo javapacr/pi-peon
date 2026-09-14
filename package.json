@@ -9,12 +9,13 @@
   },
   "author": "javapacr",
   "license": "MIT",
+  "private": true,
   "scripts": {
     "test": "echo \"No tests yet\" && exit 0",
     "typecheck": "tsc --noEmit"
   },
   "pi": {
-    "extensions": ["./peon.ts"]
+    "extensions": ["./index.ts"]
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"
