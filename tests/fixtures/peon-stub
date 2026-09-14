@@ -1,0 +1,5 @@
+#!/bin/sh
+# peon CLI test double: dumps its environment next to the capture file,
+# then records everything pi-peon pipes to stdin.
+env > "$PEON_CAPTURE.env"
+cat > "$PEON_CAPTURE"
