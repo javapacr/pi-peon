@@ -115,13 +115,21 @@ describe("registration", () => {
 		const stub = mountExtension("s0");
 		assert.deepEqual(
 			[...stub.native.keys()].sort(),
-			["agent_settled", "agent_start", "session_start", "tool_execution_end"],
+			[
+				"agent_settled",
+				"agent_start",
+				"session_shutdown",
+				"session_start",
+				"tool_execution_end",
+			],
 		);
 	});
 
 	it("registers exactly the custom channels", () => {
 		const stub = mountExtension("s0");
 		assert.deepEqual([...stub.custom.keys()].sort(), [
+			"herdr:blocked",
+			"request-attention",
 			"rpiv:ask-user:blocked",
 		]);
 	});
@@ -220,6 +228,108 @@ describe("session identity", () => {
 		fireNative(stub, "agent_settled");
 		assert.equal(stub.sent[1].session_id, "sess-two");
 		assert.equal(stub.sent[2].session_id, "sess-two");
+	});
+
+	it("custom-channel payloads carry the cached session id", () => {
+		const stub = mountExtension("sess-cached");
+		fireNative(stub, "session_start");
+		stub.switchSession("sess-next");
+		fireCustom(stub, "rpiv:ask-user:blocked", { active: true });
+		fireCustom(stub, "request-attention", { message: "approve?" });
+		fireCustom(stub, "herdr:blocked", { active: true, label: "worker-1" });
+		for (const payload of stub.sent.slice(-3)) {
+			assert.equal(payload.session_id, "sess-cached");
+		}
+	});
+});
+
+describe("session_shutdown gating", () => {
+	it("maps a quit shutdown to SessionEnd", () => {
+		const stub = mountExtension("sess-a");
+		fireNative(stub, "session_shutdown", { type: "session_shutdown", reason: "quit" });
+		assert.equal(stub.sent.length, 1);
+		assert.equal(stub.sent[0].hook_event_name, "SessionEnd");
+	});
+
+	it("emits nothing for reload/new/resume/fork shutdowns", () => {
+		const stub = mountExtension("sess-a");
+		for (const reason of ["reload", "new", "resume", "fork"] as const) {
+			fireNative(stub, "session_shutdown", { type: "session_shutdown", reason });
+		}
+		assert.equal(stub.sent.length, 0);
+	});
+
+	it("emits nothing for a quit shutdown without UI", () => {
+		const stub = mountExtension("sess-a");
+		fireNative(
+			stub,
+			"session_shutdown",
+			{ type: "session_shutdown", reason: "quit" },
+			{ hasUI: false },
+		);
+		assert.equal(stub.sent.length, 0);
+	});
+});
+
+describe("custom channel gating", () => {
+	it("maps request-attention to a permission_request notification", () => {
+		const stub = mountExtension("sess-a");
+		fireCustom(stub, "request-attention", { message: "sandbox needs approval" });
+		assert.equal(stub.sent.length, 1);
+		assert.equal(stub.sent[0].hook_event_name, "Notification");
+		assert.equal(stub.sent[0].notification_type, "permission_request");
+		assert.equal("message" in stub.sent[0], false, "message must not be forwarded");
+	});
+
+	it("ignores request-attention events without a payload", () => {
+		const stub = mountExtension("sess-a");
+		fireCustom(stub, "request-attention", undefined);
+		fireCustom(stub, "request-attention", null);
+		assert.equal(stub.sent.length, 0);
+	});
+
+	it("maps a rising herdr:blocked edge with label to subagent_attention", () => {
+		const stub = mountExtension("sess-a");
+		fireCustom(stub, "herdr:blocked", { active: true, label: "reviewer" });
+		assert.equal(stub.sent.length, 1);
+		assert.equal(stub.sent[0].notification_type, "subagent_attention");
+		assert.equal(stub.sent[0].label, "reviewer");
+	});
+
+	it("notifies on a rising herdr:blocked edge without a label, omitting the label field", () => {
+		const stub = mountExtension("sess-a");
+		fireCustom(stub, "herdr:blocked", { active: true });
+		assert.equal(stub.sent.length, 1);
+		assert.equal(stub.sent[0].notification_type, "subagent_attention");
+		assert.equal("label" in stub.sent[0], false);
+	});
+
+	it("emits nothing on a falling herdr:blocked edge", () => {
+		const stub = mountExtension("sess-a");
+		fireCustom(stub, "herdr:blocked", { active: false });
+		assert.equal(stub.sent.length, 0);
+	});
+
+	it("emits nothing for rpiv falling edges", () => {
+		const stub = mountExtension("sess-a");
+		fireCustom(stub, "rpiv:ask-user:blocked", { active: false });
+		assert.equal(stub.sent.length, 0);
+	});
+
+	it("stays a pure consumer: zero pi.events.emit calls across all handlers", () => {
+		const stub = mountExtension("sess-a");
+		fireNative(stub, "session_start");
+		fireNative(stub, "agent_start");
+		fireNative(stub, "agent_settled");
+		fireNative(stub, "tool_execution_end", { toolName: "bash", isError: true });
+		fireNative(stub, "session_shutdown", { type: "session_shutdown", reason: "quit" });
+		fireCustom(stub, "rpiv:ask-user:blocked", { active: true });
+		fireCustom(stub, "rpiv:ask-user:blocked", { active: false });
+		fireCustom(stub, "request-attention", { message: "approve?" });
+		fireCustom(stub, "request-attention", undefined);
+		fireCustom(stub, "herdr:blocked", { active: true, label: "worker" });
+		fireCustom(stub, "herdr:blocked", { active: false });
+		assert.equal(stub.emitted.length, 0);
 	});
 });
 
