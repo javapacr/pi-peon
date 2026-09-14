@@ -127,7 +127,7 @@ export default function (pi: ExtensionAPI, deps?: { send?: Send }): void {
 		if (!event.isError || !ctx.hasUI) return;
 		// peon checks tool_name === "Bash": normalize pi's bash and task
 		// (background task runner) names to the Claude Code convention.
-		const toolName = ["bash", "task"].includes(event.toolName.toLowerCase())
+		const toolName = ["bash", "task"].includes((event.toolName ?? "").toLowerCase())
 			? "Bash"
 			: event.toolName;
 		sendHook("PostToolUseFailure", sessionId, ctx.cwd, {

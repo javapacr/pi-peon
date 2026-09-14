@@ -105,7 +105,7 @@ Surveyed 2026-09-14 against the installed extension ecosystem:
 
 ## Known Issues
 
-- The peon CLI's handling of the newer payload types (`permission_request`, `subagent_attention`, `SessionEnd`) is unaudited — the silent-fail contract bounds any mismatch to a missing ping, never host harm.
+- The peon CLI's handling of the newer payload types (`permission_request`, `subagent_attention`, `SessionEnd`) is unaudited at the ping-behavior level — smoke-tested 2026-09-14 (all three exit 0 against the real binary); the silent-fail contract bounds any mismatch to a missing ping, never host harm.
 - If `peon` is not installed and not overridable via `PEON_BIN`/`PATH`, events are silently dropped (intentional — no noise). The binary path is **no longer hardcoded**: resolution order is `PEON_BIN` → `/opt/homebrew/bin/peon` → `PATH`.
 - The `execFile` call has a 5-second timeout; slow peon startup may result in dropped events.
 
