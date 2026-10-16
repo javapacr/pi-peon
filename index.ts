@@ -165,6 +165,9 @@ export default function (pi: ExtensionAPI, deps?: { send?: Send }): void {
 		// Edge-paired channel: only the rising edge (active:true) is
 		// attention; the falling edge carries no label and emits nothing.
 		if (!isRecord(data) || !data.active) return;
+		// A bridge re-emitting rpiv:ask-user:blocked here tags it with that
+		// source; the rpiv handler already notified, so skip the duplicate.
+		if (data.source === "rpiv:ask-user:blocked") return;
 		const extra: PeonPayload = { notification_type: "subagent_attention" };
 		if (typeof data.label === "string") extra.label = data.label;
 		sendHook("Notification", cachedSessionId(), process.cwd(), extra);

@@ -320,6 +320,36 @@ describe("custom channel gating", () => {
 		assert.equal(stub.sent.length, 0);
 	});
 
+	it("emits one elicitation_dialog when a bridge re-emits rpiv:ask-user:blocked as herdr:blocked", () => {
+		const stub = mountExtension("sess-a");
+		fireCustom(stub, "rpiv:ask-user:blocked", { active: true });
+		fireCustom(stub, "herdr:blocked", {
+			active: true,
+			label: "Waiting for your answer",
+			source: "rpiv:ask-user:blocked",
+		});
+		fireCustom(stub, "rpiv:ask-user:blocked", { active: false });
+		fireCustom(stub, "herdr:blocked", {
+			active: false,
+			source: "rpiv:ask-user:blocked",
+		});
+		assert.equal(stub.sent.length, 1);
+		assert.equal(stub.sent[0].hook_event_name, "Notification");
+		assert.equal(stub.sent[0].notification_type, "elicitation_dialog");
+	});
+
+	it("still notifies on herdr:blocked edges whose source is not the rpiv channel", () => {
+		const stub = mountExtension("sess-a");
+		fireCustom(stub, "herdr:blocked", {
+			active: true,
+			label: "worker",
+			source: "pi-subagents",
+		});
+		assert.equal(stub.sent.length, 1);
+		assert.equal(stub.sent[0].notification_type, "subagent_attention");
+		assert.equal(stub.sent[0].label, "worker");
+	});
+
 	it("emits nothing for rpiv falling edges", () => {
 		const stub = mountExtension("sess-a");
 		fireCustom(stub, "rpiv:ask-user:blocked", { active: false });
