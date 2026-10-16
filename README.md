@@ -24,7 +24,7 @@ Delivery is best-effort by contract: no resolvable binary, spawn ENOENT, non-zer
 | 4 | `tool_execution_end` | native | `PostToolUseFailure` | `tool_name` (normalized), `error: "Tool error"` | `isError` **and** `ctx.hasUI` |
 | 5 | `rpiv:ask-user:blocked` | custom | `Notification` | `notification_type: "elicitation_dialog"` | rising edge (`active: true`) |
 | 6 | `request-attention` | custom | `Notification` | `notification_type: "permission_request"` | payload present; the emitter's `message` is **not** forwarded |
-| 7 | `herdr:blocked` | custom | `Notification` | `notification_type: "subagent_attention"`, plus `label` when the payload carries a string label | rising edge only; `active: false` emits nothing |
+| 7 | `herdr:blocked` | custom | `Notification` | `notification_type: "subagent_attention"`, plus `label` when the payload carries a string label | rising edge only; `active: false` emits nothing; skipped when `source === "rpiv:ask-user:blocked"` (a bridge re-emit, already notified by row 5) |
 | 8 | `session_shutdown` | native | `SessionEnd` | — | `ctx.hasUI` **and** `reason === "quit"` |
 
 `agent_settled` (fires only after a run fully settles — no pending retry, compaction, or continuation) replaced the old `agent_end` mapping, so an auto-retried turn yields exactly one `Stop`. Tool names are normalized to Claude Code convention (`bash`/`task` → `Bash`, case-insensitive) because peon checks `tool_name === "Bash"`. Native events gate on `ctx.hasUI`; custom channels carry no ctx and use `process.cwd()` — their emitters UI-gate themselves.
